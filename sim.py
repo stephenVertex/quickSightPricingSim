@@ -16,15 +16,12 @@ class QuicksightUser:
         self.active_to_inactive_probability = active_to_inactive_probability
         self.acct_type                      = acct_type
         self.user_id                        = user_id
-        #self.status_history                 = ["active"]
         self.status_history = { user_creation_month : "active" }
 
     def __repr__(self):
 
         max_month = max(self.status_history.keys())
         cur_status = self.status_history[max_month]
-        # n_active = len(filter(lambda x: x == "active", self.status_history.values()))
-
         return(f"User: {self.user_id}, history: {cur_status}")
 
     def simulate_next_month(self, time_to_removal = 999999):
@@ -33,17 +30,20 @@ class QuicksightUser:
         sh_max_month = max(self.status_history.keys())
         sh_ttr = max(1, sh_max_month - time_to_removal + 1)
 
+        ## If the user is active, sample to see if they will remain active
         if self.status_history[sh_max_month] == "active":
             if random.random() < self.active_to_inactive_probability:
                 self.status_history[sh_max_month + 1] = "inactive"
             else:
                 self.status_history[sh_max_month + 1] = "active"
                 
-
+        ## If the user is inactive....
         else:
+            ## If they have been inactive for time_to_removal months, then remove them.
             if (len(self.status_history) > time_to_removal) and (all( [self.status_history[i] == "inactive" for i in range(sh_ttr, sh_max_month + 1)])):
                 
                 self.status_history[sh_max_month + 1] = "removed"
+            ## Otherwise, keep the current status
             else:
                 self.status_history[sh_max_month + 1] = self.status_history[sh_max_month]
 
@@ -132,7 +132,7 @@ class QSUCollection():
                 if d_key not in m_v:
                     m_v[d_key] = 0
 
-            m_v['billed_users'] = m_v['active'] + m_v['removed']
+            m_v['billed_users'] = m_v['active'] + m_v['inactive']
             m_v['cost'] = self.get_cost(m_v)
 
             dlist.append(m_v)
